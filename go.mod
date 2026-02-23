@@ -3,7 +3,7 @@ module github.com/MrLemur/terraform-provider-migadu
 go 1.26.0
 
 require (
-	github.com/MrLemur/migadu-go v1.3.0
+	github.com/MrLemur/migadu-go v1.4.0
 	github.com/hashicorp/terraform-plugin-framework v1.17.0
 	github.com/hashicorp/terraform-plugin-go v0.29.0
 	github.com/hashicorp/terraform-plugin-testing v1.14.0

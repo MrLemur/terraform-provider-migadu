@@ -140,7 +140,7 @@ func (d *DomainDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	resp.Diagnostics.Append(diags...)
 	data.SenderDenylist = senderDenylist
 
-	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, splitRecipientDenylist(retrieved.RecipientDenylist))
+	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(retrieved.RecipientDenylist))
 	resp.Diagnostics.Append(diags...)
 	data.RecipientDenylist = recipientDenylist
 

@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MrLemur/migadu-go"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -180,7 +179,7 @@ func (r *DomainResource) Create(ctx context.Context, req resource.CreateRequest,
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),
 		SenderDenylist:       senderDenylist,
-		RecipientDenylist:    strings.Join(recipientDenylistSlice, ","),
+		RecipientDenylist:    recipientDenylistSlice,
 		CatchallDestinations: catchallDestinations,
 	}
 
@@ -224,7 +223,7 @@ func (r *DomainResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(diags...)
 	data.SenderDenylist = senderDenylist
 
-	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, splitRecipientDenylist(retrieved.RecipientDenylist))
+	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(retrieved.RecipientDenylist))
 	resp.Diagnostics.Append(diags...)
 	data.RecipientDenylist = recipientDenylist
 
@@ -260,7 +259,7 @@ func (r *DomainResource) Update(ctx context.Context, req resource.UpdateRequest,
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),
 		SenderDenylist:       senderDenylist,
-		RecipientDenylist:    strings.Join(recipientDenylistSlice, ","),
+		RecipientDenylist:    recipientDenylistSlice,
 		CatchallDestinations: catchallDestinations,
 	}
 
@@ -302,16 +301,3 @@ func normalizeStringSlice(values []string) []string {
 	return values
 }
 
-func splitRecipientDenylist(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return []string{}
-	}
-	parts := strings.Split(value, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if t := strings.TrimSpace(p); t != "" {
-			result = append(result, t)
-		}
-	}
-	return result
-}
