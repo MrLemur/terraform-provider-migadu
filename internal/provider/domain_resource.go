@@ -9,12 +9,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 )
 
 var _ resource.Resource = &DomainResource{}
@@ -33,7 +34,7 @@ type DomainResourceModel struct {
 	State                types.String `tfsdk:"state"`
 	Description          types.String `tfsdk:"description"`
 	Tags                 types.List   `tfsdk:"tags"`
-	SpamAggressiveness   types.Int64  `tfsdk:"spam_aggressiveness"`
+	SpamAggressiveness   types.String  `tfsdk:"spam_aggressiveness"`
 	GreylistingEnabled   types.Bool   `tfsdk:"greylisting_enabled"`
 	MXProxyEnabled       types.Bool   `tfsdk:"mx_proxy_enabled"`
 	HostedDNS            types.Bool   `tfsdk:"hosted_dns"`
@@ -80,13 +81,15 @@ func (r *DomainResource) Schema(ctx context.Context, req resource.SchemaRequest,
 					listplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"spam_aggressiveness": schema.Int64Attribute{
-				MarkdownDescription: "Spam filter aggressiveness level for the domain (integer). " +
-					"Valid values: `-3` (paranoid/most aggressive), `-2` (aggressive), " +
-					"`0` (moderate, default), `2` (suspicious), `3` (permissive/least aggressive).",
+			"spam_aggressiveness": schema.StringAttribute{
+				MarkdownDescription: "Spam filter aggressiveness level. " +
+					"Valid values: `paranoid`, `aggressive`, `default`, `suspicious`, `permissive`.",
 				Optional: true,
 				Computed: true,
-				Default:  int64default.StaticInt64(0),
+				Default:  stringdefault.StaticString("default"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("paranoid", "aggressive", "default", "suspicious", "permissive"),
+				},
 			},
 			"greylisting_enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether greylisting is enabled.",
@@ -174,7 +177,7 @@ func (r *DomainResource) Create(ctx context.Context, req resource.CreateRequest,
 		Name:                 data.Name.ValueString(),
 		Description:          data.Description.ValueString(),
 		Tags:                 tags,
-		SpamAggressiveness:   int(data.SpamAggressiveness.ValueInt64()),
+		SpamAggressiveness:   data.SpamAggressiveness.ValueString(),
 		GreylistingEnabled:   data.GreylistingEnabled.ValueBool(),
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),
@@ -210,7 +213,7 @@ func (r *DomainResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	data.State = types.StringValue(retrieved.State)
 	data.Description = types.StringValue(retrieved.Description)
-	data.SpamAggressiveness = types.Int64Value(int64(retrieved.SpamAggressiveness))
+	data.SpamAggressiveness = types.StringValue(retrieved.SpamAggressiveness)
 	data.GreylistingEnabled = types.BoolValue(retrieved.GreylistingEnabled)
 	data.MXProxyEnabled = types.BoolValue(retrieved.MXProxyEnabled)
 	data.HostedDNS = types.BoolValue(retrieved.HostedDNS)
@@ -254,7 +257,7 @@ func (r *DomainResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Name:                 data.Name.ValueString(),
 		Description:          data.Description.ValueString(),
 		Tags:                 tags,
-		SpamAggressiveness:   int(data.SpamAggressiveness.ValueInt64()),
+		SpamAggressiveness:   data.SpamAggressiveness.ValueString(),
 		GreylistingEnabled:   data.GreylistingEnabled.ValueBool(),
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),

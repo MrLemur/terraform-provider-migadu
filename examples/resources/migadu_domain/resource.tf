@@ -7,7 +7,7 @@ resource "migadu_domain" "custom" {
   name        = "custom.example.com"
   description = "Custom domain with spam filtering"
 
-  spam_aggressiveness = -2
+  spam_aggressiveness = "aggressive"
   greylisting_enabled = true
 
   catchall_destinations = ["admin@custom.example.com"]

@@ -63,7 +63,7 @@ func TestDomainResourceDeleteAddsWarning(t *testing.T) {
 		State:                types.StringNull(),
 		Description:          types.StringNull(),
 		Tags:                 types.ListNull(types.StringType),
-		SpamAggressiveness:   types.Int64Null(),
+		SpamAggressiveness:   types.StringNull(),
 		GreylistingEnabled:   types.BoolNull(),
 		MXProxyEnabled:       types.BoolNull(),
 		HostedDNS:            types.BoolNull(),

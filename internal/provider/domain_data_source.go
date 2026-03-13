@@ -24,7 +24,7 @@ type DomainDataSourceModel struct {
 	State                types.String `tfsdk:"state"`
 	Description          types.String `tfsdk:"description"`
 	Tags                 types.List   `tfsdk:"tags"`
-	SpamAggressiveness   types.Int64  `tfsdk:"spam_aggressiveness"`
+	SpamAggressiveness   types.String  `tfsdk:"spam_aggressiveness"`
 	GreylistingEnabled   types.Bool   `tfsdk:"greylisting_enabled"`
 	MXProxyEnabled       types.Bool   `tfsdk:"mx_proxy_enabled"`
 	HostedDNS            types.Bool   `tfsdk:"hosted_dns"`
@@ -59,8 +59,8 @@ func (d *DomainDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
-			"spam_aggressiveness": schema.Int64Attribute{
-				MarkdownDescription: "Spam filter aggressiveness level (integer). See `migadu_domain` resource for valid values.",
+			"spam_aggressiveness": schema.StringAttribute{
+				MarkdownDescription: "Spam filter aggressiveness level. Valid values: `paranoid`, `aggressive`, `default`, `suspicious`, `permissive`.",
 				Computed:            true,
 			},
 			"greylisting_enabled": schema.BoolAttribute{
@@ -127,7 +127,7 @@ func (d *DomainDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	data.State = types.StringValue(retrieved.State)
 	data.Description = types.StringValue(retrieved.Description)
-	data.SpamAggressiveness = types.Int64Value(int64(retrieved.SpamAggressiveness))
+	data.SpamAggressiveness = types.StringValue(retrieved.SpamAggressiveness)
 	data.GreylistingEnabled = types.BoolValue(retrieved.GreylistingEnabled)
 	data.MXProxyEnabled = types.BoolValue(retrieved.MXProxyEnabled)
 	data.HostedDNS = types.BoolValue(retrieved.HostedDNS)

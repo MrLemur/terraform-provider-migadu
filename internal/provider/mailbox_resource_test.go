@@ -110,7 +110,7 @@ func TestMailboxResourcePasswordValidation(t *testing.T) {
 				MayAccessPop3:         types.BoolValue(true),
 				MayAccessManageSieve:  types.BoolValue(true),
 				SpamAction:            types.StringValue("folder"),
-				SpamAggressiveness:    types.StringValue("moderate"),
+				SpamAggressiveness:    types.StringValue("default"),
 				FooterActive:          types.BoolValue(false),
 				FooterPlainBody:       types.StringNull(),
 				FooterHTMLBody:        types.StringNull(),
