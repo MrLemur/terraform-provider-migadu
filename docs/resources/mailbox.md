@@ -76,7 +76,7 @@ resource "migadu_mailbox" "invitation" {
 - `password`: `password` is required; `password_recovery_email` is ignored.
 - `invitation`: `password_recovery_email` is required; `password` must not be set.
 - `password_recovery_email` (String) Recovery email address for password resets. Required when `password_method` is `invitation`.
-- `spam_action` (String) Action for spam emails: 'folder' or 'delete'.
+- `spam_action` (String) Action for spam emails. Valid values: `folder`, `delete`.
 - `spam_aggressiveness` (String) Spam filter aggressiveness level for the mailbox. Valid values (most to least aggressive):
 
 `strictest`, `stricter`, `strict`, `default` (use domain setting), `permissive`, `more permissive`, `most permissive`.

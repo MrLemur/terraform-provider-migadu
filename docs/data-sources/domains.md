@@ -33,5 +33,5 @@ Read-Only:
 - `hosted_dns` (Boolean) Whether DNS is hosted by Migadu.
 - `mx_proxy_enabled` (Boolean) Whether MX proxy is enabled.
 - `name` (String) The domain name.
-- `spam_aggressiveness` (Number) Spam filter aggressiveness level (integer).
+- `spam_aggressiveness` (String) Spam filter aggressiveness level.
 - `state` (String) Domain state.

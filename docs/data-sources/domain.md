@@ -34,6 +34,6 @@ data "migadu_domain" "example" {
 - `mx_proxy_enabled` (Boolean) Whether MX proxy is enabled.
 - `recipient_denylist` (List of String) List of denied recipient addresses.
 - `sender_denylist` (List of String) List of denied sender addresses.
-- `spam_aggressiveness` (Number) Spam filter aggressiveness level (integer). See `migadu_domain` resource for valid values.
+- `spam_aggressiveness` (String) Spam filter aggressiveness level. Valid values: `paranoid`, `aggressive`, `default`, `suspicious`, `permissive`.
 - `state` (String) Domain state.
 - `tags` (List of String) Domain tags.

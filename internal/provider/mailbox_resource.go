@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/MrLemur/migadu-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -137,10 +139,13 @@ func (r *MailboxResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Default:             booldefault.StaticBool(true),
 			},
 			"spam_action": schema.StringAttribute{
-				MarkdownDescription: "Action for spam emails: 'folder' or 'delete'.",
+				MarkdownDescription: "Action for spam emails. Valid values: `folder`, `delete`.",
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString("folder"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("folder", "delete"),
+				},
 			},
 			"spam_aggressiveness": schema.StringAttribute{
 				MarkdownDescription: "Spam filter aggressiveness level for the mailbox. Valid values (most to least aggressive):\n\n" +
@@ -148,6 +153,9 @@ func (r *MailboxResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Optional: true,
 				Computed: true,
 				Default:  stringdefault.StaticString("default"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("strictest", "stricter", "strict", "default", "permissive", "more permissive", "most permissive"),
+				},
 			},
 			"footer_active": schema.BoolAttribute{
 				MarkdownDescription: "Whether email footer is active.",
@@ -245,11 +253,6 @@ func (r *MailboxResource) Create(ctx context.Context, req resource.CreateRequest
 			"Missing Password",
 			"When password_method is 'password', the password field must be provided.",
 		)
-		return
-	}
-
-	if err := validateMailboxSpam(data.SpamAggressiveness.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Invalid spam_aggressiveness", err.Error())
 		return
 	}
 
@@ -357,11 +360,6 @@ func (r *MailboxResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	if err := validateMailboxSpam(data.SpamAggressiveness.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Invalid spam_aggressiveness", err.Error())
-		return
-	}
-
 	// Create API request body
 	mailbox := &migadu.Mailbox{
 		LocalPart:             data.LocalPart.ValueString(),
@@ -427,23 +425,6 @@ func (r *MailboxResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 }
 
-// validateMailboxSpam checks that level is a valid Migadu mailbox spam aggressiveness string.
-// See the Mailbox GoDoc for valid levels.
-func validateMailboxSpam(level string) error {
-	valid := map[string]bool{
-		"strictest":       true,
-		"stricter":        true,
-		"strict":          true,
-		"default":         true,
-		"permissive":      true,
-		"more permissive": true,
-		"most permissive": true,
-	}
-	if !valid[level] {
-		return fmt.Errorf("invalid mailbox spam_aggressiveness %q: must be one of strictest, stricter, strict, default, permissive, \"more permissive\", \"most permissive\"", level)
-	}
-	return nil
-}
 
 func (r *MailboxResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Format: domain_name/local_part

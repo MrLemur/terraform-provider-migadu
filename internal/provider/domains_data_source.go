@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/MrLemur/migadu-go"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -28,7 +29,7 @@ type DomainListItemModel struct {
 	Name               types.String `tfsdk:"name"`
 	State              types.String `tfsdk:"state"`
 	Description        types.String `tfsdk:"description"`
-	SpamAggressiveness types.Int64  `tfsdk:"spam_aggressiveness"`
+	SpamAggressiveness types.String `tfsdk:"spam_aggressiveness"`
 	GreylistingEnabled types.Bool   `tfsdk:"greylisting_enabled"`
 	MXProxyEnabled     types.Bool   `tfsdk:"mx_proxy_enabled"`
 	HostedDNS          types.Bool   `tfsdk:"hosted_dns"`
@@ -50,8 +51,8 @@ func (d *DomainsDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 						"name":        schema.StringAttribute{MarkdownDescription: "The domain name.", Computed: true},
 						"state":       schema.StringAttribute{MarkdownDescription: "Domain state.", Computed: true},
 						"description": schema.StringAttribute{MarkdownDescription: "Domain description.", Computed: true},
-						"spam_aggressiveness": schema.Int64Attribute{
-							MarkdownDescription: "Spam filter aggressiveness level (integer).",
+						"spam_aggressiveness": schema.StringAttribute{
+							MarkdownDescription: "Spam filter aggressiveness level.",
 							Computed:            true,
 						},
 						"greylisting_enabled": schema.BoolAttribute{
@@ -109,7 +110,7 @@ func (d *DomainsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			Name:               types.StringValue(domain.Name),
 			State:              types.StringValue(domain.State),
 			Description:        types.StringValue(domain.Description),
-			SpamAggressiveness: types.Int64Value(int64(domain.SpamAggressiveness)),
+			SpamAggressiveness: types.StringValue(domain.SpamAggressiveness),
 			GreylistingEnabled: types.BoolValue(domain.GreylistingEnabled),
 			MXProxyEnabled:     types.BoolValue(domain.MXProxyEnabled),
 			HostedDNS:          types.BoolValue(domain.HostedDNS),
@@ -121,7 +122,7 @@ func (d *DomainsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			"name":                types.StringType,
 			"state":               types.StringType,
 			"description":         types.StringType,
-			"spam_aggressiveness": types.Int64Type,
+			"spam_aggressiveness": types.StringType,
 			"greylisting_enabled": types.BoolType,
 			"mx_proxy_enabled":    types.BoolType,
 			"hosted_dns":          types.BoolType,

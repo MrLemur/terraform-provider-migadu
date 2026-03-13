@@ -22,7 +22,7 @@ resource "migadu_domain" "custom" {
   name        = "custom.example.com"
   description = "Custom domain with spam filtering"
 
-  spam_aggressiveness = -2
+  spam_aggressiveness = "aggressive"
   greylisting_enabled = true
 
   catchall_destinations = ["admin@custom.example.com"]
@@ -45,7 +45,7 @@ resource "migadu_domain" "custom" {
 - `mx_proxy_enabled` (Boolean) Whether MX proxy is enabled.
 - `recipient_denylist` (List of String) List of denied recipient addresses.
 - `sender_denylist` (List of String) List of denied sender addresses.
-- `spam_aggressiveness` (Number) Spam filter aggressiveness level for the domain (integer). Valid values: `-3` (paranoid/most aggressive), `-2` (aggressive), `0` (moderate, default), `2` (suspicious), `3` (permissive/least aggressive).
+- `spam_aggressiveness` (String) Spam filter aggressiveness level. Valid values: `paranoid`, `aggressive`, `default`, `suspicious`, `permissive`.
 - `tags` (List of String) Domain tags.
 
 ### Read-Only
