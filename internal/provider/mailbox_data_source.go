@@ -34,6 +34,9 @@ type MailboxDataSourceModel struct {
 	StorageUsage         types.Float64 `tfsdk:"storage_usage"`
 	ChangedAt            types.String  `tfsdk:"changed_at"`
 	LastLoginAt          types.String  `tfsdk:"last_login_at"`
+	SenderAllowlist      types.List    `tfsdk:"sender_allowlist"`
+	SenderDenylist       types.List    `tfsdk:"sender_denylist"`
+	RecipientDenylist    types.List    `tfsdk:"recipient_denylist"`
 }
 
 func (d *MailboxDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -97,6 +100,21 @@ func (d *MailboxDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				MarkdownDescription: "Last login timestamp.",
 				Computed:            true,
 			},
+			"sender_allowlist": schema.ListAttribute{
+				MarkdownDescription: "List of allowed sender addresses.",
+				Computed:            true,
+				ElementType:         types.StringType,
+			},
+			"sender_denylist": schema.ListAttribute{
+				MarkdownDescription: "List of denied sender addresses.",
+				Computed:            true,
+				ElementType:         types.StringType,
+			},
+			"recipient_denylist": schema.ListAttribute{
+				MarkdownDescription: "List of denied recipient addresses.",
+				Computed:            true,
+				ElementType:         types.StringType,
+			},
 		},
 	}
 }
@@ -145,6 +163,18 @@ func (d *MailboxDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	data.StorageUsage = types.Float64Value(mailbox.StorageUsage)
 	data.ChangedAt = types.StringValue(mailbox.ChangedAt)
 	data.LastLoginAt = types.StringValue(mailbox.LastLoginAt)
+
+	senderAllowlist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderAllowlist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderAllowlist = senderAllowlist
+
+	senderDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderDenylist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderDenylist = senderDenylist
+
+	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.RecipientDenylist))
+	resp.Diagnostics.Append(diags...)
+	data.RecipientDenylist = recipientDenylist
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
