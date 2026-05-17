@@ -8,8 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -38,6 +39,7 @@ type DomainResourceModel struct {
 	GreylistingEnabled   types.Bool   `tfsdk:"greylisting_enabled"`
 	MXProxyEnabled       types.Bool   `tfsdk:"mx_proxy_enabled"`
 	HostedDNS            types.Bool   `tfsdk:"hosted_dns"`
+	SenderAllowlist      types.List   `tfsdk:"sender_allowlist"`
 	SenderDenylist       types.List   `tfsdk:"sender_denylist"`
 	RecipientDenylist    types.List   `tfsdk:"recipient_denylist"`
 	CatchallDestinations types.List   `tfsdk:"catchall_destinations"`
@@ -77,9 +79,7 @@ func (r *DomainResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"spam_aggressiveness": schema.StringAttribute{
 				MarkdownDescription: "Spam filter aggressiveness level. " +
@@ -109,32 +109,33 @@ func (r *DomainResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
 			},
+			"sender_allowlist": schema.ListAttribute{
+				MarkdownDescription: "List of allowed sender addresses.",
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+			},
 			"sender_denylist": schema.ListAttribute{
 				MarkdownDescription: "List of denied sender addresses.",
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"recipient_denylist": schema.ListAttribute{
 				MarkdownDescription: "List of denied recipient addresses.",
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 			"catchall_destinations": schema.ListAttribute{
 				MarkdownDescription: "Catchall email destinations.",
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
 		},
 	}
@@ -164,8 +165,9 @@ func (r *DomainResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	var tags, senderDenylist, recipientDenylistSlice, catchallDestinations []string
+	var tags, senderAllowlist, senderDenylist, recipientDenylistSlice, catchallDestinations []string
 	resp.Diagnostics.Append(data.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(data.SenderAllowlist.ElementsAs(ctx, &senderAllowlist, false)...)
 	resp.Diagnostics.Append(data.SenderDenylist.ElementsAs(ctx, &senderDenylist, false)...)
 	resp.Diagnostics.Append(data.RecipientDenylist.ElementsAs(ctx, &recipientDenylistSlice, false)...)
 	resp.Diagnostics.Append(data.CatchallDestinations.ElementsAs(ctx, &catchallDestinations, false)...)
@@ -181,6 +183,7 @@ func (r *DomainResource) Create(ctx context.Context, req resource.CreateRequest,
 		GreylistingEnabled:   data.GreylistingEnabled.ValueBool(),
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),
+		SenderAllowlist:      senderAllowlist,
 		SenderDenylist:       senderDenylist,
 		RecipientDenylist:    recipientDenylistSlice,
 		CatchallDestinations: catchallDestinations,
@@ -222,6 +225,10 @@ func (r *DomainResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(diags...)
 	data.Tags = tags
 
+	senderAllowlist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(retrieved.SenderAllowlist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderAllowlist = senderAllowlist
+
 	senderDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(retrieved.SenderDenylist))
 	resp.Diagnostics.Append(diags...)
 	data.SenderDenylist = senderDenylist
@@ -244,8 +251,9 @@ func (r *DomainResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	var tags, senderDenylist, recipientDenylistSlice, catchallDestinations []string
+	var tags, senderAllowlist, senderDenylist, recipientDenylistSlice, catchallDestinations []string
 	resp.Diagnostics.Append(data.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(data.SenderAllowlist.ElementsAs(ctx, &senderAllowlist, false)...)
 	resp.Diagnostics.Append(data.SenderDenylist.ElementsAs(ctx, &senderDenylist, false)...)
 	resp.Diagnostics.Append(data.RecipientDenylist.ElementsAs(ctx, &recipientDenylistSlice, false)...)
 	resp.Diagnostics.Append(data.CatchallDestinations.ElementsAs(ctx, &catchallDestinations, false)...)
@@ -261,6 +269,7 @@ func (r *DomainResource) Update(ctx context.Context, req resource.UpdateRequest,
 		GreylistingEnabled:   data.GreylistingEnabled.ValueBool(),
 		MXProxyEnabled:       data.MXProxyEnabled.ValueBool(),
 		HostedDNS:            data.HostedDNS.ValueBool(),
+		SenderAllowlist:      senderAllowlist,
 		SenderDenylist:       senderDenylist,
 		RecipientDenylist:    recipientDenylistSlice,
 		CatchallDestinations: catchallDestinations,
