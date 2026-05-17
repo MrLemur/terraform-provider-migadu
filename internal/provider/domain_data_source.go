@@ -28,6 +28,7 @@ type DomainDataSourceModel struct {
 	GreylistingEnabled   types.Bool   `tfsdk:"greylisting_enabled"`
 	MXProxyEnabled       types.Bool   `tfsdk:"mx_proxy_enabled"`
 	HostedDNS            types.Bool   `tfsdk:"hosted_dns"`
+	SenderAllowlist      types.List   `tfsdk:"sender_allowlist"`
 	SenderDenylist       types.List   `tfsdk:"sender_denylist"`
 	RecipientDenylist    types.List   `tfsdk:"recipient_denylist"`
 	CatchallDestinations types.List   `tfsdk:"catchall_destinations"`
@@ -74,6 +75,11 @@ func (d *DomainDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			"hosted_dns": schema.BoolAttribute{
 				MarkdownDescription: "Whether DNS is hosted by Migadu.",
 				Computed:            true,
+			},
+			"sender_allowlist": schema.ListAttribute{
+				MarkdownDescription: "List of allowed sender addresses.",
+				Computed:            true,
+				ElementType:         types.StringType,
 			},
 			"sender_denylist": schema.ListAttribute{
 				MarkdownDescription: "List of denied sender addresses.",
@@ -135,6 +141,10 @@ func (d *DomainDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	tags, diags := types.ListValueFrom(ctx, types.StringType, retrieved.Tags)
 	resp.Diagnostics.Append(diags...)
 	data.Tags = tags
+
+	senderAllowlist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(retrieved.SenderAllowlist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderAllowlist = senderAllowlist
 
 	senderDenylist, diags := types.ListValueFrom(ctx, types.StringType, retrieved.SenderDenylist)
 	resp.Diagnostics.Append(diags...)
