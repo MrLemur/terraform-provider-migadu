@@ -38,9 +38,6 @@ type IdentityResourceModel struct {
 	MayAccessImap        types.Bool   `tfsdk:"may_access_imap"`
 	MayAccessPop3        types.Bool   `tfsdk:"may_access_pop3"`
 	MayAccessManageSieve types.Bool   `tfsdk:"may_access_managesieve"`
-	FooterActive         types.Bool   `tfsdk:"footer_active"`
-	FooterPlainBody      types.String `tfsdk:"footer_plain_body"`
-	FooterHTMLBody       types.String `tfsdk:"footer_html_body"`
 	Address              types.String `tfsdk:"address"`
 }
 
@@ -115,24 +112,6 @@ func (r *IdentityResource) Schema(ctx context.Context, req resource.SchemaReques
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 			},
-			"footer_active": schema.BoolAttribute{
-				MarkdownDescription: "Whether email footer is active.",
-				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(false),
-			},
-			"footer_plain_body": schema.StringAttribute{
-				MarkdownDescription: "Plain text email footer.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(""),
-			},
-			"footer_html_body": schema.StringAttribute{
-				MarkdownDescription: "HTML email footer.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString(""),
-			},
 			"address": schema.StringAttribute{
 				MarkdownDescription: "Full email address (computed).",
 				Computed:            true,
@@ -174,9 +153,6 @@ func (r *IdentityResource) Create(ctx context.Context, req resource.CreateReques
 		MayAccessImap:        data.MayAccessImap.ValueBool(),
 		MayAccessPop3:        data.MayAccessPop3.ValueBool(),
 		MayAccessManagesieve: data.MayAccessManageSieve.ValueBool(),
-		FooterActive:         data.FooterActive.ValueBool(),
-		FooterPlainBody:      data.FooterPlainBody.ValueString(),
-		FooterHTMLBody:       data.FooterHTMLBody.ValueString(),
 	}
 
 	domain := &migadu.Domain{Name: data.DomainName.ValueString()}
@@ -216,9 +192,6 @@ func (r *IdentityResource) Read(ctx context.Context, req resource.ReadRequest, r
 	data.MayAccessImap = types.BoolValue(identity.MayAccessImap)
 	data.MayAccessPop3 = types.BoolValue(identity.MayAccessPop3)
 	data.MayAccessManageSieve = types.BoolValue(identity.MayAccessManagesieve)
-	data.FooterActive = types.BoolValue(identity.FooterActive)
-	data.FooterPlainBody = types.StringValue(identity.FooterPlainBody)
-	data.FooterHTMLBody = types.StringValue(identity.FooterHTMLBody)
 	data.Address = types.StringValue(identity.Address)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -240,9 +213,6 @@ func (r *IdentityResource) Update(ctx context.Context, req resource.UpdateReques
 		MayAccessImap:        data.MayAccessImap.ValueBool(),
 		MayAccessPop3:        data.MayAccessPop3.ValueBool(),
 		MayAccessManagesieve: data.MayAccessManageSieve.ValueBool(),
-		FooterActive:         data.FooterActive.ValueBool(),
-		FooterPlainBody:      data.FooterPlainBody.ValueString(),
-		FooterHTMLBody:       data.FooterHTMLBody.ValueString(),
 	}
 
 	domain := &migadu.Domain{Name: data.DomainName.ValueString()}

@@ -31,9 +31,6 @@ type IdentityDataSourceModel struct {
 	MayAccessImap        types.Bool   `tfsdk:"may_access_imap"`
 	MayAccessPop3        types.Bool   `tfsdk:"may_access_pop3"`
 	MayAccessManageSieve types.Bool   `tfsdk:"may_access_managesieve"`
-	FooterActive         types.Bool   `tfsdk:"footer_active"`
-	FooterPlainBody      types.String `tfsdk:"footer_plain_body"`
-	FooterHTMLBody       types.String `tfsdk:"footer_html_body"`
 }
 
 func (d *IdentityDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -85,18 +82,6 @@ func (d *IdentityDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 				MarkdownDescription: "Whether ManageSieve access is allowed.",
 				Computed:            true,
 			},
-			"footer_active": schema.BoolAttribute{
-				MarkdownDescription: "Whether email footer is active.",
-				Computed:            true,
-			},
-			"footer_plain_body": schema.StringAttribute{
-				MarkdownDescription: "Plain text email footer.",
-				Computed:            true,
-			},
-			"footer_html_body": schema.StringAttribute{
-				MarkdownDescription: "HTML email footer.",
-				Computed:            true,
-			},
 		},
 	}
 }
@@ -142,9 +127,6 @@ func (d *IdentityDataSource) Read(ctx context.Context, req datasource.ReadReques
 	data.MayAccessImap = types.BoolValue(identity.MayAccessImap)
 	data.MayAccessPop3 = types.BoolValue(identity.MayAccessPop3)
 	data.MayAccessManageSieve = types.BoolValue(identity.MayAccessManagesieve)
-	data.FooterActive = types.BoolValue(identity.FooterActive)
-	data.FooterPlainBody = types.StringValue(identity.FooterPlainBody)
-	data.FooterHTMLBody = types.StringValue(identity.FooterHTMLBody)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

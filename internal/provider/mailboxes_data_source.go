@@ -39,6 +39,9 @@ type MailboxListItemModel struct {
 	StorageUsage         types.Float64 `tfsdk:"storage_usage"`
 	ChangedAt            types.String  `tfsdk:"changed_at"`
 	LastLoginAt          types.String  `tfsdk:"last_login_at"`
+	SenderAllowlist      types.List    `tfsdk:"sender_allowlist"`
+	SenderDenylist       types.List    `tfsdk:"sender_denylist"`
+	RecipientDenylist    types.List    `tfsdk:"recipient_denylist"`
 }
 
 func (d *MailboxesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -88,6 +91,21 @@ func (d *MailboxesDataSource) Schema(ctx context.Context, req datasource.SchemaR
 						},
 						"changed_at":    schema.StringAttribute{MarkdownDescription: "Last modification timestamp.", Computed: true},
 						"last_login_at": schema.StringAttribute{MarkdownDescription: "Last login timestamp.", Computed: true},
+						"sender_allowlist": schema.ListAttribute{
+							MarkdownDescription: "List of allowed sender addresses.",
+							Computed:            true,
+							ElementType:         types.StringType,
+						},
+						"sender_denylist": schema.ListAttribute{
+							MarkdownDescription: "List of denied sender addresses.",
+							Computed:            true,
+							ElementType:         types.StringType,
+						},
+						"recipient_denylist": schema.ListAttribute{
+							MarkdownDescription: "List of denied recipient addresses.",
+							Computed:            true,
+							ElementType:         types.StringType,
+						},
 					},
 				},
 			},
@@ -128,6 +146,13 @@ func (d *MailboxesDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	items := make([]MailboxListItemModel, 0, len(mailboxes))
 	for _, mailbox := range mailboxes {
+		senderAllowlist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderAllowlist))
+		resp.Diagnostics.Append(diags...)
+		senderDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderDenylist))
+		resp.Diagnostics.Append(diags...)
+		recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.RecipientDenylist))
+		resp.Diagnostics.Append(diags...)
+
 		items = append(items, MailboxListItemModel{
 			LocalPart:            types.StringValue(mailbox.LocalPart),
 			Name:                 types.StringValue(mailbox.Name),
@@ -141,6 +166,9 @@ func (d *MailboxesDataSource) Read(ctx context.Context, req datasource.ReadReque
 			StorageUsage:         types.Float64Value(mailbox.StorageUsage),
 			ChangedAt:            types.StringValue(mailbox.ChangedAt),
 			LastLoginAt:          types.StringValue(mailbox.LastLoginAt),
+			SenderAllowlist:      senderAllowlist,
+			SenderDenylist:       senderDenylist,
+			RecipientDenylist:    recipientDenylist,
 		})
 	}
 
@@ -158,6 +186,9 @@ func (d *MailboxesDataSource) Read(ctx context.Context, req datasource.ReadReque
 			"storage_usage":          types.Float64Type,
 			"changed_at":             types.StringType,
 			"last_login_at":          types.StringType,
+			"sender_allowlist":       types.ListType{ElemType: types.StringType},
+			"sender_denylist":        types.ListType{ElemType: types.StringType},
+			"recipient_denylist":     types.ListType{ElemType: types.StringType},
 		},
 	}, items)
 	resp.Diagnostics.Append(diags...)

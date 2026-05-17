@@ -67,6 +67,7 @@ func TestDomainResourceDeleteAddsWarning(t *testing.T) {
 		GreylistingEnabled:   types.BoolNull(),
 		MXProxyEnabled:       types.BoolNull(),
 		HostedDNS:            types.BoolNull(),
+		SenderAllowlist:      types.ListNull(types.StringType),
 		SenderDenylist:       types.ListNull(types.StringType),
 		RecipientDenylist:    types.ListNull(types.StringType),
 		CatchallDestinations: types.ListNull(types.StringType),
