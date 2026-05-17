@@ -7,12 +7,14 @@ import (
 
 	"github.com/MrLemur/migadu-go"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -51,6 +53,9 @@ type MailboxResourceModel struct {
 	FooterActive          types.Bool   `tfsdk:"footer_active"`
 	FooterPlainBody       types.String `tfsdk:"footer_plain_body"`
 	FooterHTMLBody        types.String `tfsdk:"footer_html_body"`
+	SenderAllowlist       types.List   `tfsdk:"sender_allowlist"`
+	SenderDenylist        types.List   `tfsdk:"sender_denylist"`
+	RecipientDenylist     types.List   `tfsdk:"recipient_denylist"`
 	Address               types.String `tfsdk:"address"`
 	IsInternal            types.Bool   `tfsdk:"is_internal"`
 	StorageUsage          types.Int64  `tfsdk:"storage_usage"`
@@ -175,6 +180,27 @@ func (r *MailboxResource) Schema(ctx context.Context, req resource.SchemaRequest
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),
 			},
+			"sender_allowlist": schema.ListAttribute{
+				MarkdownDescription: "List of allowed sender addresses.",
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+			},
+			"sender_denylist": schema.ListAttribute{
+				MarkdownDescription: "List of denied sender addresses.",
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+			},
+			"recipient_denylist": schema.ListAttribute{
+				MarkdownDescription: "List of denied recipient addresses.",
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
+			},
 			"address": schema.StringAttribute{
 				MarkdownDescription: "Full email address (computed).",
 				Computed:            true,
@@ -256,6 +282,14 @@ func (r *MailboxResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	var senderAllowlist, senderDenylist, recipientDenylist []string
+	resp.Diagnostics.Append(data.SenderAllowlist.ElementsAs(ctx, &senderAllowlist, false)...)
+	resp.Diagnostics.Append(data.SenderDenylist.ElementsAs(ctx, &senderDenylist, false)...)
+	resp.Diagnostics.Append(data.RecipientDenylist.ElementsAs(ctx, &recipientDenylist, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create API request body
 	mailbox := &migadu.Mailbox{
 		LocalPart:             data.LocalPart.ValueString(),
@@ -272,6 +306,9 @@ func (r *MailboxResource) Create(ctx context.Context, req resource.CreateRequest
 		FooterActive:          data.FooterActive.ValueBool(),
 		FooterPlainBody:       data.FooterPlainBody.ValueString(),
 		FooterHTMLBody:        data.FooterHTMLBody.ValueString(),
+		SenderAllowlist:       senderAllowlist,
+		SenderDenylist:        senderDenylist,
+		RecipientDenylist:     recipientDenylist,
 	}
 	if !data.Password.IsNull() && !data.Password.IsUnknown() {
 		mailbox.Password = data.Password.ValueString()
@@ -331,6 +368,19 @@ func (r *MailboxResource) Read(ctx context.Context, req resource.ReadRequest, re
 	data.FooterActive = types.BoolValue(mailbox.FooterActive)
 	data.FooterPlainBody = types.StringValue(mailbox.FooterPlainBody)
 	data.FooterHTMLBody = types.StringValue(mailbox.FooterHTMLBody)
+
+	senderAllowlist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderAllowlist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderAllowlist = senderAllowlist
+
+	senderDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.SenderDenylist))
+	resp.Diagnostics.Append(diags...)
+	data.SenderDenylist = senderDenylist
+
+	recipientDenylist, diags := types.ListValueFrom(ctx, types.StringType, normalizeStringSlice(mailbox.RecipientDenylist))
+	resp.Diagnostics.Append(diags...)
+	data.RecipientDenylist = recipientDenylist
+
 	data.Address = types.StringValue(mailbox.Address)
 	data.IsInternal = types.BoolValue(mailbox.IsInternal)
 	data.StorageUsage = types.Int64Value(int64(mailbox.StorageUsage))
@@ -360,6 +410,14 @@ func (r *MailboxResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	var senderAllowlist, senderDenylist, recipientDenylist []string
+	resp.Diagnostics.Append(data.SenderAllowlist.ElementsAs(ctx, &senderAllowlist, false)...)
+	resp.Diagnostics.Append(data.SenderDenylist.ElementsAs(ctx, &senderDenylist, false)...)
+	resp.Diagnostics.Append(data.RecipientDenylist.ElementsAs(ctx, &recipientDenylist, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Create API request body
 	mailbox := &migadu.Mailbox{
 		LocalPart:             data.LocalPart.ValueString(),
@@ -375,6 +433,9 @@ func (r *MailboxResource) Update(ctx context.Context, req resource.UpdateRequest
 		FooterActive:          data.FooterActive.ValueBool(),
 		FooterPlainBody:       data.FooterPlainBody.ValueString(),
 		FooterHTMLBody:        data.FooterHTMLBody.ValueString(),
+		SenderAllowlist:       senderAllowlist,
+		SenderDenylist:        senderDenylist,
+		RecipientDenylist:     recipientDenylist,
 	}
 	if passwordMethodIsSet {
 		mailbox.PasswordMethod = data.PasswordMethod.ValueString()
