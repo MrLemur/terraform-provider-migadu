@@ -33,6 +33,7 @@ type IdentityResourceModel struct {
 	LocalPart            types.String `tfsdk:"local_part"`
 	Name                 types.String `tfsdk:"name"`
 	Password             types.String `tfsdk:"password"`
+	PasswordUse          types.String `tfsdk:"password_use"`
 	MaySend              types.Bool   `tfsdk:"may_send"`
 	MayReceive           types.Bool   `tfsdk:"may_receive"`
 	MayAccessImap        types.Bool   `tfsdk:"may_access_imap"`
@@ -81,6 +82,12 @@ func (r *IdentityResource) Schema(ctx context.Context, req resource.SchemaReques
 				MarkdownDescription: "Password for the identity.",
 				Optional:            true,
 				Sensitive:           true,
+			},
+			"password_use": schema.StringAttribute{
+				MarkdownDescription: "How the identity authenticates. Set to \"custom\" to give the identity its own app-specific password.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("custom"),
 			},
 			"may_send": schema.BoolAttribute{
 				MarkdownDescription: "Whether the identity can send emails.",
@@ -148,6 +155,7 @@ func (r *IdentityResource) Create(ctx context.Context, req resource.CreateReques
 		LocalPart:            data.LocalPart.ValueString(),
 		Name:                 data.Name.ValueString(),
 		Password:             data.Password.ValueString(),
+		PasswordUse:          data.PasswordUse.ValueString(),
 		MaySend:              data.MaySend.ValueBool(),
 		MayReceive:           data.MayReceive.ValueBool(),
 		MayAccessImap:        data.MayAccessImap.ValueBool(),
@@ -187,6 +195,7 @@ func (r *IdentityResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	data.Name = types.StringValue(identity.Name)
+	data.PasswordUse = types.StringValue(identity.PasswordUse)
 	data.MaySend = types.BoolValue(identity.MaySend)
 	data.MayReceive = types.BoolValue(identity.MayReceive)
 	data.MayAccessImap = types.BoolValue(identity.MayAccessImap)
@@ -208,6 +217,7 @@ func (r *IdentityResource) Update(ctx context.Context, req resource.UpdateReques
 		LocalPart:            data.LocalPart.ValueString(),
 		Name:                 data.Name.ValueString(),
 		Password:             data.Password.ValueString(),
+		PasswordUse:          data.PasswordUse.ValueString(),
 		MaySend:              data.MaySend.ValueBool(),
 		MayReceive:           data.MayReceive.ValueBool(),
 		MayAccessImap:        data.MayAccessImap.ValueBool(),

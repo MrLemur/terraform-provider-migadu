@@ -56,6 +56,7 @@ resource "migadu_identity" "send_only" {
 - `may_send` (Boolean) Whether the identity can send emails.
 - `name` (String) Display name for the identity.
 - `password` (String, Sensitive) Password for the identity.
+- `password_use` (String) How the identity authenticates. Set to "custom" to give the identity its own app-specific password.
 
 ### Read-Only
 
