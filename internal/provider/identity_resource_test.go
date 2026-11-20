@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func TestNewIdentityResourceMetadata(t *testing.T) {
@@ -74,4 +77,38 @@ func TestIdentityResourceImportState(t *testing.T) {
 
 		assertHasDiagnosticSummary(t, resp.Diagnostics, "Invalid Import ID")
 	})
+}
+
+func TestIdentityResourcePasswordUseSchema(t *testing.T) {
+	schemaResp := mustResourceSchema(t, NewIdentityResource())
+
+	attr, ok := schemaResp.Schema.Attributes["password_use"].(schema.StringAttribute)
+	if !ok {
+		t.Fatal("expected password_use to be a string attribute")
+	}
+	if !attr.Optional || !attr.Computed {
+		t.Fatalf("expected password_use to be optional and computed, got optional=%t computed=%t", attr.Optional, attr.Computed)
+	}
+	if attr.Default != nil {
+		t.Fatal("expected password_use to have no default")
+	}
+
+	validate := func(v string) bool {
+		for _, val := range attr.Validators {
+			resp := validator.StringResponse{}
+			val.ValidateString(context.Background(), validator.StringRequest{ConfigValue: types.StringValue(v)}, &resp)
+			if resp.Diagnostics.HasError() {
+				return false
+			}
+		}
+		return true
+	}
+	for _, v := range []string{"none", "mailbox", "custom"} {
+		if !validate(v) {
+			t.Errorf("expected %q to be accepted", v)
+		}
+	}
+	if validate("bogus") {
+		t.Error("expected \"bogus\" to be rejected")
+	}
 }
