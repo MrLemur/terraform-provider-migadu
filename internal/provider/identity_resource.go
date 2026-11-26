@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/MrLemur/migadu-go"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -33,6 +35,7 @@ type IdentityResourceModel struct {
 	LocalPart            types.String `tfsdk:"local_part"`
 	Name                 types.String `tfsdk:"name"`
 	Password             types.String `tfsdk:"password"`
+	PasswordUse          types.String `tfsdk:"password_use"`
 	MaySend              types.Bool   `tfsdk:"may_send"`
 	MayReceive           types.Bool   `tfsdk:"may_receive"`
 	MayAccessImap        types.Bool   `tfsdk:"may_access_imap"`
@@ -81,6 +84,17 @@ func (r *IdentityResource) Schema(ctx context.Context, req resource.SchemaReques
 				MarkdownDescription: "Password for the identity.",
 				Optional:            true,
 				Sensitive:           true,
+			},
+			"password_use": schema.StringAttribute{
+				MarkdownDescription: "How the identity authenticates: `custom` (own app-specific password, requires `password`), `mailbox` (login with the mailbox password) or `none` (sender persona only, no login). If unset, the value reported by Migadu is used.",
+				Optional:            true,
+				Computed:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("none", "mailbox", "custom"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"may_send": schema.BoolAttribute{
 				MarkdownDescription: "Whether the identity can send emails.",
@@ -148,6 +162,7 @@ func (r *IdentityResource) Create(ctx context.Context, req resource.CreateReques
 		LocalPart:            data.LocalPart.ValueString(),
 		Name:                 data.Name.ValueString(),
 		Password:             data.Password.ValueString(),
+		PasswordUse:          data.PasswordUse.ValueString(),
 		MaySend:              data.MaySend.ValueBool(),
 		MayReceive:           data.MayReceive.ValueBool(),
 		MayAccessImap:        data.MayAccessImap.ValueBool(),
@@ -165,6 +180,7 @@ func (r *IdentityResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	data.Address = types.StringValue(created.Address)
+	data.PasswordUse = types.StringValue(created.PasswordUse)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -187,6 +203,7 @@ func (r *IdentityResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	data.Name = types.StringValue(identity.Name)
+	data.PasswordUse = types.StringValue(identity.PasswordUse)
 	data.MaySend = types.BoolValue(identity.MaySend)
 	data.MayReceive = types.BoolValue(identity.MayReceive)
 	data.MayAccessImap = types.BoolValue(identity.MayAccessImap)
@@ -208,6 +225,7 @@ func (r *IdentityResource) Update(ctx context.Context, req resource.UpdateReques
 		LocalPart:            data.LocalPart.ValueString(),
 		Name:                 data.Name.ValueString(),
 		Password:             data.Password.ValueString(),
+		PasswordUse:          data.PasswordUse.ValueString(),
 		MaySend:              data.MaySend.ValueBool(),
 		MayReceive:           data.MayReceive.ValueBool(),
 		MayAccessImap:        data.MayAccessImap.ValueBool(),
@@ -225,6 +243,7 @@ func (r *IdentityResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	data.Address = types.StringValue(updated.Address)
+	data.PasswordUse = types.StringValue(updated.PasswordUse)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
